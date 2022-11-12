@@ -33,7 +33,8 @@ contract UniPay{
     }
       //recieve function is to get the ether from Payer 
      receive() payable external { 
-         emit ReceivedToContractLog(msg.sender,msg.value);//emits the information about Payer and How much he sends to contract
+         emit ReceivedToContractLog(msg.sender,msg.value);
+         //emits the information about Payer and How much he sends to contract
      }
       //whenever this function calls by Payer it shows the current balance of the smartcontract
     function Balance() public OnlyPayer view returns(uint256){

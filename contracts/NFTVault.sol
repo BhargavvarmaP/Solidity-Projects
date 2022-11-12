@@ -13,7 +13,7 @@ contract NFTVault {
         uint256 timestamp;
     }
 
-    mapping(uint256=>NFT) public NFTlist;
+    mapping(address=>mapping(uint256=>NFT)) public NFTlist;
     uint256 public nfts;
 
           event NFTDeposit(address indexed sender,uint256 tokenid);
@@ -22,7 +22,7 @@ contract NFTVault {
     function Deposit(uint256 _tokenid,IERC721 _nftaddr) public {
        require(IERC721(_nftaddr)==NFTCollection,"Not a Valid NFT");
        NFTCollection.safeTransferFrom(msg.sender,address(this),_tokenid,"");
-        NFTlist[_tokenid]=NFT(msg.sender,_tokenid,block.timestamp);
+        NFTlist[msg.sender][_tokenid]=NFT(msg.sender,_tokenid,block.timestamp);
         nfts++;
       emit NFTDeposit(msg.sender,_tokenid);
    }   
@@ -30,8 +30,16 @@ contract NFTVault {
    function Withdraw(uint256 _tokenid,IERC721 _nftaddr) public {
        require(IERC721(_nftaddr)==NFTCollection,"Not a Valid NFT");
        NFTCollection.safeTransferFrom(address(this),msg.sender,_tokenid,"");
-        delete NFTlist[_tokenid];
+        delete NFTlist[msg.sender][_tokenid];
         nfts--;
         emit NFTWithdraw(msg.sender,_tokenid);
    }
+    function onERC721Received(
+        address operator,
+        address from,
+        uint256 tokenId,
+        bytes calldata data
+    ) public pure returns (bytes4) {
+        return bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
+    }
 }

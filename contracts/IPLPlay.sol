@@ -42,7 +42,9 @@ contract IPLPlay is ERC721 {
 
    }
      //this function starts game between two playercards
-   function BeginGame(uint _attackerid,address _attackeraddr,uint _defenderid,address _defenderaddr) public OnlyOrganizer{
+   function BeginGame(uint _attackerid,address _attackeraddr,
+                      uint _defenderid,address _defenderaddr) public OnlyOrganizer{
+                        
     require(_attackeraddr==address(0)&&_attackeraddr==address(0),"Entered zero address");
    require(_attackeraddr==ownerOf(_attackerid),"Attacker owner and entered address mismatch");
    require(_defenderaddr==ownerOf(_defenderid),"Defender owner and entered address mismatch");
@@ -61,8 +63,10 @@ contract IPLPlay is ERC721 {
     else{
         Player2.points+=5;
     }
-     Player1.level = upgradelevel(Player1.points); //calls upgrade level function to check points and update Player 1 level
-     Player2.level = upgradelevel(Player2.points); //calls upgrade level function to check points and update Player 2 level
+    //calls upgrade level function to check points and update Player 1 level
+     Player1.level = upgradelevel(Player1.points); 
+     //calls upgrade level function to check points and update Player 2 level
+     Player2.level = upgradelevel(Player2.points); 
 }
     function upgradelevel(uint _points) internal pure returns(string memory _level){
         if(_points>100 && _points<350){

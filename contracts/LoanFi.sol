@@ -40,7 +40,9 @@ contract LoanFi {
         require(loandetails[msg.sender].status!=STATUS.ACCEPTED,"Loan already exists");
         _;
     }        
-    function RequestLoan(IERC20 _token,uint256 _collateralamount,uint256 _loanamount,uint256 _payoffamount,uint256 _loanduration) public CheckLoan {
+    function RequestLoan(IERC20 _token,uint256 _collateralamount,uint256 _loanamount,
+                         uint256 _payoffamount,uint256 _loanduration) public CheckLoan {
+
           _loanduration=_loanduration*1 days;
           require(token==IERC20(_token),"Invalid collateral token address");
           require(token.balanceOf(msg.sender)>=_collateralamount,"Insufficient Funds in your wallet");
@@ -48,7 +50,9 @@ contract LoanFi {
           require(token.approve(lender,_collateralamount));
           _loanamount*=1 ether;
           _payoffamount*=1 ether; 
-          loandetails[msg.sender]=Loan(0,address(0),msg.sender,_collateralamount,_loanamount,_payoffamount,_loanduration,0,STATUS.REQUESTED);
+          loandetails[msg.sender] = Loan(0,address(0),msg.sender,
+                                        _collateralamount,_loanamount,
+                                         _payoffamount,_loanduration,0,STATUS.REQUESTED);
           requestdetails[loanrequests]=msg.sender;
           loanrequests++;
           emit LoanRequested(msg.sender,_loanamount);
