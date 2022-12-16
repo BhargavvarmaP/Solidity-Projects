@@ -3,11 +3,10 @@ const {ethers} = require("hardhat");
 async function main() {
 
   const deployer = await ethers.getSigners();
-  const lender = "0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199";
-  const tokenaddress ="0x50A055fEfadBCcC70bAe668681BDC1e59368a4f7";
+  const lender = "0xE014c24271730F97A23C4E61b9c135B653E147C5";
 
   const LoanFi = await ethers.getContractFactory("LoanFi");
-  const Loanfi = await LoanFi.deploy(tokenaddress,lender);
+  const Loanfi = await LoanFi.deploy(lender);
 
   await Loanfi.deployed();
 

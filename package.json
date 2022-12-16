@@ -1,7 +1,7 @@
 {
   "name": "solidity-projects",
   "version": "1.0.0",
-  "description": "",
+  "description": "Solidty is how I create smart contracts. The prospect of building a new, decentralised future with smart contracts and the blockchain excites me.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -23,9 +23,16 @@
     "@openzeppelin/contracts": "^4.7.3",
     "chai-bn": "^0.3.1",
     "dotenv": "^16.0.3",
+    "eth-scribble": "^0.6.16",
     "hardhat": "^2.12.1",
     "solhint": "^3.3.7",
     "solidity-coverage": "^0.8.2",
     "yarn": "^1.22.19"
+  },
+  "dependencies": {
+    "@chainlink/contracts": "^0.5.1"
+  },
+  "directories": {
+    "test": "test"
   }
 }

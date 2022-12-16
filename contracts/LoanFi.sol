@@ -1,18 +1,24 @@
 //SPDX-License-Identifier:MIT
 pragma solidity >=0.4.0 <0.9.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-contract LoanFi {
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+contract LoanFi is ReentrancyGuard {
     address payable private lender;
-    IERC20 immutable private token;
-    constructor(IERC20 _token,address payable _lender) {
-        token=_token;
+    
+    constructor(address payable _lender) {
         lender=_lender;
+    }
+    
+    struct Token {
+        IERC20 token;
+        bool   listed;
     }
 
     struct Loan {
         uint256 loanid;
         address lender;
         address borrower;
+        IERC20  collateraltoken;
         uint256 collateralamount;
         uint256 loanamount;
         uint256 payoffamount;
@@ -20,11 +26,13 @@ contract LoanFi {
         uint256 duedate;
         STATUS status;
     }
-    mapping(address=>Loan) public loandetails;
-    mapping(uint256=>address) public requestdetails;
+
+    mapping(IERC20=>Token) private tokenlist;
+    mapping(address=>Loan) private loandetails;
+    mapping(address=>uint256) private requestdetails;
     uint256 private loans;
     uint256 private loanrequests;
-    uint256 internal loanid=1001;
+    uint256 private loanid=1000;
     enum STATUS{REQUESTED,ACCEPTED}
 
             event LoanRequested(address indexed borrower,uint256 loanamount); 
@@ -40,60 +48,63 @@ contract LoanFi {
         require(loandetails[msg.sender].status!=STATUS.ACCEPTED,"Loan already exists");
         _;
     }        
+    function AddWhitelistToken(IERC20 _token) public Onlylender {
+        tokenlist[_token].listed=true;
+    }
+    function RemoveWhitelistToken(IERC20 _token) public Onlylender {
+        tokenlist[_token].listed=false;
+    }
     function RequestLoan(IERC20 _token,uint256 _collateralamount,uint256 _loanamount,
-                         uint256 _payoffamount,uint256 _loanduration) public CheckLoan {
-
+                         uint256 _payoffamount,uint256 _loanduration) public CheckLoan nonReentrant{
+    
           _loanduration=_loanduration*1 days;
-          require(token==IERC20(_token),"Invalid collateral token address");
-          require(token.balanceOf(msg.sender)>=_collateralamount,"Insufficient Funds in your wallet");
+          require(tokenlist[_token].listed,"Invalid collateral token address");
+          require(tokenlist[_token].token.balanceOf(msg.sender)>=_collateralamount,"Insufficient Funds in your wallet");
           require(_loanduration<90 days,"loan duration must be less than 90 days");
-          require(token.approve(lender,_collateralamount));
+          require(tokenlist[_token].token.approve(lender,_collateralamount));
           _loanamount*=1 ether;
           _payoffamount*=1 ether; 
-          loandetails[msg.sender] = Loan(0,address(0),msg.sender,
+          loandetails[msg.sender] = Loan(0,address(0),msg.sender,tokenlist[_token].token,
                                         _collateralamount,_loanamount,
                                          _payoffamount,_loanduration,0,STATUS.REQUESTED);
-          requestdetails[loanrequests]=msg.sender;
-          loanrequests++;
+          requestdetails[msg.sender]=loanrequests++;
           emit LoanRequested(msg.sender,_loanamount);
     }
     function LoanStatus(address _borrower) public view returns(Loan memory) {
           return loandetails[_borrower];
     }  
-    function lendEther(address _borrower) payable public Onlylender {
+    function lendEther(address _borrower) payable public Onlylender nonReentrant{
+         require(_borrower!=address(0),"Entered Zero address");
          require(msg.value==loandetails[_borrower].loanamount,"Enter Valid amount");
-         uint256 _id = find(_borrower);
-         loandetails[_borrower].loanid=loanid;
+         require(requestdetails[msg.sender]>0,"Not a Valid Borrower address");
+         loandetails[_borrower].loanid=loanid++;
          loandetails[_borrower].lender=msg.sender;
          loandetails[_borrower].status=STATUS.ACCEPTED;
          loandetails[_borrower].duedate=block.timestamp+loandetails[_borrower].loanduration;
-         loanid++;
-         require(token.transferFrom(_borrower,lender,loandetails[_borrower].collateralamount));
-         require(token.approve(_borrower,loandetails[_borrower].collateralamount));
+         require(loandetails[_borrower].collateraltoken.transferFrom(_borrower,lender,loandetails[_borrower].collateralamount));
+         require(loandetails[_borrower].collateraltoken.approve(_borrower,loandetails[_borrower].collateralamount));
          payable(_borrower).transfer(loandetails[_borrower].loanamount);
-         delete requestdetails[_id];
+         delete requestdetails[_borrower];
          loanrequests--;
          emit LoanAccepted(msg.sender,_borrower,loandetails[_borrower].loanamount,loandetails[_borrower].duedate);
     }
-     function payLoan() public payable {
+     function payLoan() public payable nonReentrant {
         require(block.timestamp <= loandetails[msg.sender].loanduration);
         require(msg.value == loandetails[msg.sender].payoffamount);
         lender.transfer(loandetails[msg.sender].payoffamount);
-        require(token.transferFrom(lender,msg.sender,loandetails[msg.sender].collateralamount));
+        require(loandetails[msg.sender].collateraltoken.transferFrom(lender,msg.sender,loandetails[msg.sender].collateralamount));
         emit LoanPaid(msg.sender,block.timestamp);
     }
 
-     function repossess(address _borrower) public Onlylender {
+     function repossess(address _borrower) public Onlylender nonReentrant {
+        require(_borrower!=address(0),"Entered Zero address");
         require(block.timestamp > loandetails[_borrower].loanduration);
-        require(token.transfer(lender,loandetails[_borrower].collateralamount));
+        require(loandetails[_borrower].collateraltoken.transfer(lender,loandetails[_borrower].collateralamount));
         emit Possessed(msg.sender,block.timestamp,loandetails[_borrower].collateralamount);
     }
-    function find(address _addr) internal view returns(uint256 i) {
-       for(i=0;i<loanrequests;i++){
-         if(requestdetails[i]==_addr){
-             return i;
-         }
-       }
+        
+    function Renouncelender(address _newlender) public Onlylender {
+        require(_newlender!=address(0),"Entered Zero address");
+        lender=payable(_newlender);
     }
-
 }

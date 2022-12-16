@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.4.0 <0.9.0;
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
-contract NFTVault {
+import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
+contract NFTVault is ERC721Holder {
     IERC721 immutable public NFTCollection;
     constructor(IERC721 _nftcollection){
         NFTCollection=_nftcollection;
@@ -34,12 +34,5 @@ contract NFTVault {
         nfts--;
         emit NFTWithdraw(msg.sender,_tokenid);
    }
-    function onERC721Received(
-        address operator,
-        address from,
-        uint256 tokenId,
-        bytes calldata data
-    ) public pure returns (bytes4) {
-        return bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
-    }
+   
 }
