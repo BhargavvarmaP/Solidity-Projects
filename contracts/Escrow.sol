@@ -5,7 +5,7 @@ contract Escrow is ReentrancyGuard{
     struct Buyer {
         address buyer;
         bool   proceed;
-        uint256 nounce;
+        uint256 nonce;
     }
     struct Product{
       uint256 Id;
@@ -72,7 +72,7 @@ contract Escrow is ReentrancyGuard{
       require(sent,"Transfer Failed");
       product_details[_Id].status = State.Delivered;
       buyer_details[msg.sender].proceed=true;
-      buyer_details[msg.sender].nounce++; 
+      buyer_details[msg.sender].nonce++; 
      emit ProductClaim(_Id, msg.sender, _amount);
     }
    
